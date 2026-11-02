@@ -1,0 +1,18 @@
+{
+  "id": "./",
+  "name": "IROHA 画像編集",
+  "short_name": "IROHA",
+  "description": "端末内で写真やイラストを編集するアプリ",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#151a25",
+  "theme_color": "#151a25",
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

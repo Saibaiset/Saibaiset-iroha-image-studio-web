@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#151b29">
+  <meta name="description" content="画像を端末内で編集できる、Chromebook対応のIROHA画像編集Webアプリです。">
+  <title>IROHA 画像編集</title>
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./app.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">い</span><span><b>IROHA</b><small>IMAGE STUDIO</small></span></div>
+    <div class="file-meta"><b id="fileName">新しい編集</b><small id="fileInfo">画像を開く、ここにドロップ</small></div>
+    <div class="top-actions">
+      <button id="undoBtn" class="button" disabled>↶ 元に戻す</button>
+      <button id="openBtn" class="button">画像を開く</button>
+      <button id="exportBtn" class="button primary" disabled>書き出す ↓</button>
+      <button id="themeBtn" class="icon-button" title="テーマを切り替え">◐</button>
+      <button id="installBtn" class="button install-button" hidden>アプリを追加</button>
+    </div>
+    <input id="fileInput" type="file" accept="image/*" hidden>
+  </header>
+  <main class="workspace">
+    <nav class="rail" aria-label="編集メニュー">
+      <span class="rail-caption">編集</span>
+      <button class="tool active" data-panel="adjust" title="補正"><i>☼</i><span>補正</span></button>
+      <button class="tool" data-panel="filters" title="フィルター"><i>✦</i><span>フィルター</span></button>
+      <button class="tool" data-panel="crop" title="切り抜き"><i>▧</i><span>切り抜き</span></button>
+      <button class="tool" data-panel="transform" title="回転"><i>↻</i><span>回転</span></button>
+      <button class="tool" data-panel="text" title="文字入れ"><i>T</i><span>文字入れ</span></button>
+      <button class="tool" data-panel="draw" title="描画"><i>◯</i><span>描画</span></button>
+      <button class="tool" data-panel="mosaic" title="モザイク"><i>▦</i><span>モザイク</span></button>
+      <div class="rail-spacer"></div>
+      <button id="resetBtn" class="tool reset-tool" title="最初に戻す"><i>⟲</i><span>最初に戻す</span></button>
+    </nav>
+    <section class="stage-column">
+      <div id="stage" class="stage">
+        <div id="dropCard" class="drop-card">
+          <div class="drop-icon">▧</div>
+          <h1>写真を、思いどおりに。</h1>
+          <p>画像を開くか、このエリアにドラッグ＆ドロップしてください。</p>
+          <button id="chooseBtn" class="button primary">画像を選ぶ</button>
+          <small>JPG · PNG · WEBP · GIF · BMP</small>
+        </div>
+        <canvas id="preview" aria-label="画像プレビュー"></canvas>
+        <div id="dropHint" class="drop-hint" hidden>ここに画像をドロップ</div>
+      </div>
+      <footer class="stage-footer">
+        <span id="statusText">画像を開くと編集を始められます</span>
+        <div class="zoom-control"><span>倍率</span><button id="zoomOut" class="button small">−</button><input id="zoomSlider" type="range" min="25" max="200" step="1" value="100" aria-label="表示倍率"><input id="zoomInput" type="number" min="25" max="200" value="100" aria-label="表示倍率"><span>%</span><button id="zoomIn" class="button small">＋</button></div>
+        <span id="previewStatus">プレビュー</span>
+      </footer>
+    </section>
+    <aside class="panel-scroll" aria-label="編集設定">
+      <div id="panel-adjust" class="panel-content">
+        <section class="card"><h2>補正</h2><p class="hint">スライダーを動かすとプレビューに反映されます</p>
+          <div class="preset-row"><button class="chip" data-adjust-preset="clear">クリア</button><button class="chip" data-adjust-preset="portrait">人物</button><button class="chip" data-adjust-preset="landscape">風景</button><button class="chip" data-adjust-preset="soft">やわらか</button><button class="chip" data-adjust-preset="night">夜景</button><button class="chip" data-adjust-preset="matte">マット</button></div>
+          <div id="adjustControls"></div>
+          <label class="check-row"><input id="vignetteEnabled" type="checkbox"> ビネットを追加</label>
+          <div id="vignetteControl" class="range-row" hidden></div>
+          <label class="range-row"><span>ノイズ <output id="grainValue">0</output></span><input id="grain" type="range" min="0" max="30" value="0"></label>
+          <button id="applyAdjustments" class="button primary wide">補正を画像に反映</button>
+        </section>
+      </div>
+      <div id="panel-filters" class="panel-content" hidden>
+        <section class="card"><h2>フィルター</h2><p class="hint">色味を選んで写真の雰囲気を変えます</p><button class="button clear-filter" data-filter="none">× フィルターを外す</button><div id="filterGrid" class="filter-grid"></div></section>
+        <section class="card"><h2>フィルム＆カメラ風</h2><p class="hint">フィルムの色調から着想したオリジナルルックです</p><button class="button clear-filter" data-look="none">× フィルム＆カメラ風を外す</button><div id="lookGrid" class="filter-grid"></div><label class="range-row"><span>粒状感 <output id="lookGrainValue">12</output></span><input id="lookGrain" type="range" min="0" max="40" value="12"></label></section>
+      </div>
+      <div id="panel-crop" class="panel-content" hidden>
+        <section class="card"><h2>切り抜き</h2><p class="hint">比率を選び、枠の8つの丸いハンドルをドラッグします</p><div id="cropInfo" class="crop-info">枠を表示して範囲を選択</div><label class="field-label" for="cropRatio">アスペクト比</label><select id="cropRatio" class="select"><option value="free">自由</option><option value="1:1">1:1</option><option value="4:3">4:3</option><option value="3:2">3:2</option><option value="16:9">16:9</option><option value="21:9">21:9</option><option value="3:4">3:4</option><option value="2:3">2:3</option><option value="9:19">9:19</option><option value="9:21">9:21</option><option value="65:24">65:24</option></select><div class="button-row"><button id="cropStart" class="button">枠を表示</button><button id="cropApply" class="button primary" disabled>切り抜く</button><button id="cropCancel" class="button" hidden>閉じる</button></div></section>
+      </div>
+      <div id="panel-transform" class="panel-content" hidden>
+        <section class="card"><h2>回転・反転</h2><div class="button-grid"><button id="rotateLeft" class="button">↶ 左に90°</button><button id="rotateRight" class="button">↷ 右に90°</button><button id="flipH" class="button">↔ 左右反転</button><button id="flipV" class="button">↕ 上下反転</button></div></section>
+      </div>
+      <div id="panel-text" class="panel-content" hidden>
+        <section class="card"><h2>文字入れ</h2><p class="hint">画像の中央に文字を配置します</p><button id="addText" class="button primary">＋ 文字を追加</button></section>
+      </div>
+      <div id="panel-draw" class="panel-content" hidden>
+        <section class="card"><h2>図形を追加</h2><p class="hint">丸・三角・四角・線をドラッグで描画します</p><label class="field-label">図形</label><select id="shapeKind" class="select"><option value="ellipse">丸</option><option value="triangle">三角</option><option value="rectangle">四角</option><option value="line">線</option></select><label class="field-label">色（HEX）</label><div class="color-control"><input id="shapeColor" type="color" value="#ffffff"><input id="shapeHex" value="#FFFFFF" maxlength="7" aria-label="図形の色 HEX"></div><div class="button-row"><button id="shapeStart" class="button">描画を開始</button><button id="shapeApply" class="button primary" disabled>図形を反映</button></div></section>
+        <section class="card"><h2>手描き線</h2><p class="hint">マウスやタッチで線を描きます（太さ固定）</p><label class="field-label">色（HEX）</label><div class="color-control"><input id="drawColor" type="color" value="#ffffff"><input id="drawHex" value="#FFFFFF" maxlength="7" aria-label="手描き線の色 HEX"></div><div class="button-row"><button id="drawStart" class="button">手描きを開始</button><button id="drawApply" class="button primary" disabled>線を反映</button></div></section>
+      </div>
+      <div id="panel-mosaic" class="panel-content" hidden>
+        <section class="card"><h2>モザイク・ぼかし</h2><p class="hint">範囲をドラッグして部分的に加工します</p><label class="field-label">種類</label><select id="mosaicKind" class="select"><option value="square">四角モザイク</option><option value="voronoi">ボロノイモザイク</option><option value="circle">丸モザイク</option><option value="blur">ぼかし</option></select><label class="range-row"><span>粗さ / 範囲 <output id="mosaicValue">24</output></span><input id="mosaicSize" type="range" min="6" max="64" value="24"></label><div class="button-row"><button id="mosaicStart" class="button">範囲を選ぶ</button><button id="mosaicApply" class="button primary" disabled>加工する</button><button id="mosaicCancel" class="button" hidden>閉じる</button></div></section>
+      </div>
+      <section class="card guide-card"><h2>かんたんガイド</h2><p>① 画像を開く　② 補正・切り抜き　③ 書き出す</p><small>画像はこのブラウザー内で処理されます。サーバーには送信されません。</small></section>
+    </aside>
+  </main>
+  <dialog id="textDialog" class="text-dialog">
+    <form method="dialog" id="textForm">
+      <div class="dialog-head"><div><h2>文字入れ</h2><p>画像の中央に文字を配置します</p></div><button class="icon-button" value="cancel" aria-label="閉じる">×</button></div>
+      <label class="field-label" for="textValue">表示する文字</label><input id="textValue" class="text-input" value="あなたの文字" maxlength="200">
+      <label class="field-label" for="fontFamily">フォント</label><select id="fontFamily" class="select"><option value="'Noto Sans JP', sans-serif">Noto Sans JP</option><option value="'Yu Gothic', 'Yu Gothic UI', sans-serif">游ゴシック</option><option value="'Meiryo', sans-serif">メイリオ</option><option value="'Noto Serif JP', serif">Noto Serif JP</option><option value="serif">明朝体</option><option value="sans-serif">ゴシック体</option><option value="monospace">等幅</option></select>
+      <label class="range-row"><span>文字サイズ <output id="textSizeValue">64 px</output></span><input id="textSize" type="range" min="12" max="240" value="64"></label>
+      <label class="field-label">文字色（HEX）</label><div class="color-control"><input id="textColor" type="color" value="#ffffff"><input id="textHex" value="#FFFFFF" maxlength="7" aria-label="文字色 HEX"></div>
+      <div class="dialog-actions"><button class="button" value="cancel">キャンセル</button><button id="textConfirm" class="button primary" value="default">追加する</button></div>
+    </form>
+  </dialog>
+  <dialog id="exportDialog" class="text-dialog export-dialog">
+    <form method="dialog"><div class="dialog-head"><div><h2>画像を書き出す</h2><p>保存する形式と画質を選びます</p></div><button class="icon-button" value="cancel" aria-label="閉じる">×</button></div>
+      <label class="field-label" for="exportFormat">ファイル形式</label><select id="exportFormat" class="select"><option value="image/png">PNG</option><option value="image/jpeg">JPEG</option><option value="image/webp">WebP</option></select>
+      <label class="range-row"><span>画質 <output id="qualityValue">92</output></span><input id="exportQuality" type="range" min="50" max="100" value="92"></label>
+      <div class="dialog-actions"><button class="button" value="cancel">キャンセル</button><button id="exportConfirm" class="button primary" value="default">保存する</button></div>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
